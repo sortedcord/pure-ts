@@ -1,9 +1,9 @@
-import { Entity } from "./entity.ts";
+import { Entity } from "./entity.js";
 
 class PointOfInterest {
     readonly id: string;
     name: string;
-    coordinate: [number, number]; // relative to the parent location's center
+    coordinate: [number, number];
     description: string;
     reach_allowance: number;
     isBlocking: boolean;
@@ -23,7 +23,7 @@ class Location {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
-    private boundingCoordinates: [number, number][];
+    boundingCoordinates: [number, number][]; // order of points matters as it describes the hull
     description: string;
 
     constructor(name: string, description: string, boundingCoordinates: [number, number][]) {
@@ -47,28 +47,40 @@ class WorldMap {
         this.locations = new Map<string, Location>();
     }
 
-    getLocation(locationId: string) {
-        this.locations.get(locationId)
+    getLocation(locationId: string): Location {
+        let location = this.locations.get(locationId)
+        if (!location) {
+            throw Error("Could not find a location with the given ID");
+        }
+
+        return location;
     }
 
-    search(locationOrPointOfInterestId: string, parent:Location|undefined): string|undefined {
-        // returns the location ID of the location containing that location of point of interest
-        let _parent: any = parent;
+    getParent(locationOrPointOfInterestId: string, parent:Location|undefined): string|undefined {
+        // returns the location ID of the parent location containing that location or point of interest
+
+        type RootLocation = {
+            id: "root",
+            children: Map<string, Location>,
+            pointOfInterests: Map<string, PointOfInterest>
+        }
+
+        let _parent: Location|RootLocation|undefined = parent;
 
         if (_parent===undefined) {
             _parent = {
                 id: "root",
                 children: this.locations,
-                pointOfInterests: new Map()
-            };
+                pointOfInterests: new Map<string, PointOfInterest>()
+            } satisfies RootLocation;
         }
 
 
-        if (_parent?.children.has(locationOrPointOfInterestId)) {
+        if (_parent.children.has(locationOrPointOfInterestId)) {
             return _parent.id;
         }
 
-        if (_parent?.pointOfInterests.has(locationOrPointOfInterestId)) {
+        if (_parent.pointOfInterests.has(locationOrPointOfInterestId)) {
             return _parent.id;
         }
         
@@ -76,8 +88,8 @@ class WorldMap {
             return;
         }
 
-        for (const location of _parent.location.values()) {
-            let locationId = this.search(locationOrPointOfInterestId,location);
+        for (const location of _parent.children.values()) {
+            let locationId = this.getParent(locationOrPointOfInterestId,location);
 
             if (locationId) {
                 return locationId;
@@ -90,8 +102,48 @@ class WorldMap {
 }
 
 class PositioningService {
+    isCoordinateInLocation(coordinate: [number, number], map: WorldMap, locationId: string): boolean {
+        let inside = false;
+
+        // get location bounding hull points
+        let polygon: [number, number][] = map.getLocation(locationId).boundingCoordinates;
+
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i][0], yi = polygon[i][1];
+            const xj = polygon[j][0], yj = polygon[j][0];
+
+            const intersect =
+            (yi > coordinate[1]) !== (yj > coordinate[1]) &&
+            coordinate[0] < ((xj - xi) * (coordinate[1] - yi)) / (yj - yi + xi);
+
+            if (intersect) inside = !inside;
+        }
+        return inside;
+    }
+
+    getLocationBoundingCoordinate(coordinate: [number, number], map: WorldMap): string|undefined {
+        // Returns the lowest location node that bounds the given coordinate
+        let containingLocation: Location|undefined;
+        for (const location of map.locations.values()) {
+            if (containingLocation) {
+                if (this.isCoordinateInLocation(coordinate, map, location.id)) {
+                    // if location is child of contianingLocation then update
+                    if (containingLocation.children.has(location.id)) {
+                        containingLocation = location;
+                    }
+                }
+            }
+
+            containingLocation = location;
+        }
+        return containingLocation?.id;
+
+    }
+
     getLocation(entity: Entity, map: WorldMap): string {
         // logic for calculating where an entity is
+
+
         return "location_id"
     }
 
