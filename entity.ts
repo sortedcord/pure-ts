@@ -1,4 +1,5 @@
 import { BaseObject } from "./attribute.js";
+import type { PerceivedEvent } from "./interaction.js";
 
 export class EntityStore {
     static entities = new Map<string, Entity>();
@@ -19,10 +20,15 @@ export class EntityStore {
 export class Entity extends BaseObject {
     name: string;
     position: [number, number];
+    memory: any;
 
     constructor(name: string) {
         super();
         this.name = name;
         this.position = [0,0];
+    }
+
+    receive(event: PerceivedEvent) {
+        this.memory.push(event);
     }
 }

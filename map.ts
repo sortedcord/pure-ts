@@ -1,14 +1,19 @@
 import { BaseObject } from "./attribute.js";
 import { Entity } from "./entity.js";
 
+export type Coordinates = {
+    x: number;
+    y: number;
+}
+
 class PointOfInterest extends BaseObject {
     name: string;
-    position: [number, number];
+    position: Coordinates;
     description: string;
     reach_allowance: number;
     isBlocking: boolean;
 
-    constructor(name: string, description: string, position: [number, number], reach_allowance: number=1, isBlocking: boolean = false) {
+    constructor(name: string, description: string, position: Coordinates, reach_allowance: number=1, isBlocking: boolean = false) {
         super();
         this.name = name;
         this.description = description;
@@ -22,10 +27,10 @@ class Location extends BaseObject {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
-    boundPositions: [number, number][]; // order of points matters as it describes the hull
+    boundPositions: Coordinates[]; // order of points matters as it describes the hull
     description: string;
 
-    constructor(name: string, description: string, boundingPositions: [number, number][]) {
+    constructor(name: string, description: string, boundingPositions: Coordinates[]) {
         super();
         this.name = name;
         this.description = description;
@@ -105,13 +110,13 @@ class PositioningService {
         let inside = false;
 
         // get location bounding hull points
-        let polygon: [number, number][] = map.getLocation(locationId).boundPositions;
+        let polygon: Coordinates[] = map.getLocation(locationId).boundPositions;
 
         if (polygon.length === 0) return false;
 
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            const xi = polygon[i][0], yi = polygon[i][1];
-            const xj = polygon[j][0], yj = polygon[j][1];
+            const xi = polygon[i].x, yi = polygon[i].y;
+            const xj = polygon[j].x, yj = polygon[j].y;
 
             const intersect =
                 (yi > position[1]) !== (yj > position[1]) &&
