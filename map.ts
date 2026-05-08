@@ -1,7 +1,7 @@
+import { BaseObject } from "./attribute.js";
 import { Entity } from "./entity.js";
 
-class PointOfInterest {
-    readonly id: string;
+class PointOfInterest extends BaseObject {
     name: string;
     position: [number, number];
     description: string;
@@ -9,8 +9,8 @@ class PointOfInterest {
     isBlocking: boolean;
 
     constructor(name: string, description: string, position: [number, number], reach_allowance: number=1, isBlocking: boolean = false) {
+        super();
         this.name = name;
-        this.id = crypto.randomUUID();
         this.description = description;
         this.position = position;
         this.reach_allowance = reach_allowance;
@@ -18,8 +18,7 @@ class PointOfInterest {
     }
 }
 
-class Location {
-    readonly id: string;
+class Location extends BaseObject {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
@@ -27,7 +26,7 @@ class Location {
     description: string;
 
     constructor(name: string, description: string, boundingPositions: [number, number][]) {
-        this.id = crypto.randomUUID();
+        super();
         this.name = name;
         this.description = description;
         this.children = new Map<string, Location>();
@@ -164,8 +163,8 @@ class PositioningService {
         return true;
     }
 
-    calculateDistance(source:PointOfInterest, destination: PointOfInterest): number {
-        return 0
-    }
+    // calculateDistance(source:PointOfInterest, destination: PointOfInterest): number {
+    //     return 0
+    // }
 
 }
