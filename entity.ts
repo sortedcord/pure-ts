@@ -1,12 +1,11 @@
 enum AttributeVisibility {
-    PUBLIC = "PUBLIC",
+    PUBLIC = "PUBLIC", 
     PRIVATE = "PRIVATE"
 }
 
 class Attribute {
-
-    name: string;
-    value: string;
+    readonly name: string;
+    private value: string;
     private visibility: AttributeVisibility;
     private allowedEntities: Set<string>;
 
@@ -15,6 +14,14 @@ class Attribute {
         this.value = value;
         this.visibility = visibility;
         this.allowedEntities = new Set();
+    }
+
+    setValue(newValue: string) {
+        this.value = newValue;
+    }
+
+    getValue(): string {
+        return this.value;
     }
 
     hasAccess(entityId: string): boolean {
@@ -43,7 +50,6 @@ class Attribute {
         if (this.visibility === AttributeVisibility.PRIVATE) {
             this.allowedEntities.add(entityId);
         }
-
     }
 
     revokeAccess(entityId: string) {
@@ -74,29 +80,38 @@ class EntityStore {
     }
 }
 
-class Entity {
+export class Entity {
     name: string;
-    private attributes: Attribute[];
+    private attributes: Map<string, Attribute>;
     readonly id: string;
+    position: [number, number];
 
     constructor(name: string) {
         this.name = name;
-        this.attributes = [];
+        this.attributes = new Map<string, Attribute>();
         this.id = crypto.randomUUID();
+        this.position = [0,0];
     }
 
     addAttribute(attributeName: string, value: string, visibility: AttributeVisibility) {
-        this.attributes.push(
-            new Attribute(attributeName, value, visibility)
+        if (this.attributes.get(attributeName)) {
+            throw Error("Attribute already exists");
+        }
+
+        this.attributes.set(attributeName, new Attribute(attributeName, value, visibility)
         )
     }
 
     removeAttribute(attributeName: string) {
-        this.attributes = this.attributes.filter(attribute => attribute.name !== attributeName);
+        if (!this.attributes.get(attributeName)) {
+            throw Error("No attribute found");
+        }
+
+        this.attributes.delete(attributeName);
     }
 
     getSelfAttribute(attributeName: string): Attribute | undefined {
-        return this.attributes.find(attribute => attribute.name === attributeName);
+        return this.attributes.get(attributeName);
     }
 
     getVisibleAttributesFor(entityId: string): Array<Attribute> {
@@ -106,7 +121,7 @@ class Entity {
                 return availableAttributes;
             }
 
-        for (const attribute of this.attributes) {
+        for (const attribute of this.attributes.values()) {
             if (attribute.hasAccess(thirdPartyEntity.id)) {
                 availableAttributes.push(attribute);
             }
