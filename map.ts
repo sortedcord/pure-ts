@@ -3,16 +3,16 @@ import { Entity } from "./entity.js";
 class PointOfInterest {
     readonly id: string;
     name: string;
-    coordinate: [number, number];
+    position: [number, number];
     description: string;
     reach_allowance: number;
     isBlocking: boolean;
 
-    constructor(name: string, description: string, coordinate: [number, number], reach_allowance: number=1, isBlocking: boolean = false) {
+    constructor(name: string, description: string, position: [number, number], reach_allowance: number=1, isBlocking: boolean = false) {
         this.name = name;
         this.id = crypto.randomUUID();
         this.description = description;
-        this.coordinate = coordinate;
+        this.position = position;
         this.reach_allowance = reach_allowance;
         this.isBlocking = isBlocking;
     }
@@ -23,16 +23,16 @@ class Location {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
-    boundingCoordinates: [number, number][]; // order of points matters as it describes the hull
+    boundPositions: [number, number][]; // order of points matters as it describes the hull
     description: string;
 
-    constructor(name: string, description: string, boundingCoordinates: [number, number][]) {
+    constructor(name: string, description: string, boundingPositions: [number, number][]) {
         this.id = crypto.randomUUID();
         this.name = name;
         this.description = description;
         this.children = new Map<string, Location>();
         this.pointOfInterests = new Map<string, PointOfInterest>();
-        this.boundingCoordinates = boundingCoordinates;
+        this.boundPositions = boundingPositions;
     }
 }
 
@@ -102,53 +102,63 @@ class WorldMap {
 }
 
 class PositioningService {
-    isCoordinateInLocation(coordinate: [number, number], map: WorldMap, locationId: string): boolean {
+    isPositionInLocation(position: [number, number], map: WorldMap, locationId: string): boolean {
         let inside = false;
 
         // get location bounding hull points
-        let polygon: [number, number][] = map.getLocation(locationId).boundingCoordinates;
+        let polygon: [number, number][] = map.getLocation(locationId).boundPositions;
+
+        if (polygon.length === 0) return false;
 
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
             const xi = polygon[i][0], yi = polygon[i][1];
-            const xj = polygon[j][0], yj = polygon[j][0];
+            const xj = polygon[j][0], yj = polygon[j][1];
 
             const intersect =
-            (yi > coordinate[1]) !== (yj > coordinate[1]) &&
-            coordinate[0] < ((xj - xi) * (coordinate[1] - yi)) / (yj - yi + xi);
+                (yi > position[1]) !== (yj > position[1]) &&
+                position[0] < ((xj - xi) * (position[1] - yi)) / (yj - yi) + xi;
 
             if (intersect) inside = !inside;
         }
         return inside;
     }
 
-    getLocationBoundingCoordinate(coordinate: [number, number], map: WorldMap): string|undefined {
-        // Returns the lowest location node that bounds the given coordinate
-        let containingLocation: Location|undefined;
-        for (const location of map.locations.values()) {
-            if (containingLocation) {
-                if (this.isCoordinateInLocation(coordinate, map, location.id)) {
-                    // if location is child of contianingLocation then update
-                    if (containingLocation.children.has(location.id)) {
-                        containingLocation = location;
-                    }
+    getLocationBoundingPosition(position: [number, number], map: WorldMap): string|undefined {
+        // Returns the deepest location node that bounds the given position
+        const findDeepestPositionLocation = (location: Location): Location | undefined => {
+            if (!this.isPositionInLocation(position, map, location.id)) {
+                return undefined;
+            }
+
+            for (const child of location.children.values()) {
+                const deepestChild = findDeepestPositionLocation(child);
+                if (deepestChild) {
+                    return deepestChild;
                 }
             }
 
-            containingLocation = location;
+            return location;
+        };
+
+        for (const location of map.locations.values()) {
+            const found = findDeepestPositionLocation(location);
+            if (found) {
+                return found.id;
+            }
         }
-        return containingLocation?.id;
+
+        return undefined;
 
     }
 
     getLocation(entity: Entity, map: WorldMap): string {
         // logic for calculating where an entity is
-
-
-        return "location_id"
+        const locationId = this.getLocationBoundingPosition(entity.position, map);
+        return locationId || "unknown";
     }
 
     canReach(entity: Entity, map: WorldMap, pointOfInterest: PointOfInterest): boolean {
-        // Checks if a POI can be reached by an entity at its current position without major movement to its coordinate
+        // Checks if a POI can be reached by an entity at its current position without major movement to its position
 
         // reachability check using PointOfInterest.reach_allowance
         return true;
