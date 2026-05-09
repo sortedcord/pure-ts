@@ -1,5 +1,5 @@
 import type { Coordinates } from "./map.js";
-import type { WorldContext } from "./world.js";
+import type { WorldContext, WorldMutation } from "./world.js";
 
 export type WorldEvent = {
     position: Coordinates;
@@ -44,13 +44,7 @@ interface ValidationResult {
     reason?: string;
 }
 
-export interface WorldMutation {
-    targetId: string;
-    mutationType: "ATTRIBUTE_UPDATE" | "POSITION_UPDATE" | "MEMORY_APPEND";
-    payload: any;
-}
-
-interface OutcomeResult {
+export interface OutcomeResult {
     success: boolean;
 
     outcomeType:
