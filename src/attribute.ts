@@ -1,5 +1,3 @@
-import { EntityStore } from "./entity.js";
-
 export enum AttributeVisibility {
     PUBLIC = "PUBLIC",
     PRIVATE = "PRIVATE"
@@ -43,23 +41,15 @@ export class Attribute {
         this.visibility = AttributeVisibility.PRIVATE;
     }
 
-    grantAccess(entityId: string) {
-        if (!EntityStore.get(entityId)) {
-            return;
-        }
-
+    grantAccess(objectId: string) {
         if (this.visibility === AttributeVisibility.PRIVATE) {
-            this.allowedEntities.add(entityId);
+            this.allowedEntities.add(objectId);
         }
     }
 
-    revokeAccess(entityId: string) {
-        if (!EntityStore.get(entityId)) {
-            return;
-        }
-
-        if (this.visibility === AttributeVisibility.PRIVATE && this.allowedEntities.has(entityId)) {
-            this.allowedEntities.delete(entityId);
+    revokeAccess(objectId: string) {
+        if (this.visibility === AttributeVisibility.PRIVATE && this.allowedEntities.has(objectId)) {
+            this.allowedEntities.delete(objectId);
         }
 
     }
