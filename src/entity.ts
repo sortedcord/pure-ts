@@ -1,5 +1,5 @@
 import { BaseObject } from "./attribute.js";
-import type { PerceivedEvent } from "./interaction.js";
+import type { Coordinates } from "./map.js";
 
 export class EntityStore {
     static entities = new Map<string, Entity>();
@@ -19,16 +19,12 @@ export class EntityStore {
 
 export class Entity extends BaseObject {
     name: string;
-    position: [number, number];
+    position: Coordinates;
     memory: any;
 
     constructor(name: string) {
         super();
         this.name = name;
-        this.position = [0,0];
-    }
-
-    receive(event: PerceivedEvent) {
-        this.memory.push(event);
+        this.position = {x: 0, y: 0};
     }
 }

@@ -23,8 +23,8 @@ export class Attribute {
         return this.value;
     }
 
-    hasAccess(entityId: string): boolean {
-        return (this.visibility === AttributeVisibility.PUBLIC) || this.allowedEntities.has(entityId);
+    hasAccess(objectId: string): boolean {
+        return (this.visibility === AttributeVisibility.PUBLIC) || this.allowedEntities.has(objectId);
     }
 
     getVisibility(): AttributeVisibility {
@@ -71,6 +71,11 @@ export abstract class BaseObject implements IAttribute {
     addAttribute(name: string, value: string, visibility: AttributeVisibility): void {
         if (this.attributes.has(name)) throw Error(`Attribute ${name} already exists`);
         this.attributes.set(name, new Attribute(name, value, visibility));
+    }
+
+    removeAttribute(name: string): void {
+        if (!this.attributes.has(name)) throw Error(`Attribute ${name} does not exist`);
+        this.attributes.delete(name);
     }
 
     getVisibleAttributesFor(viewerId: string): Attribute[] {

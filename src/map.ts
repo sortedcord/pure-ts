@@ -40,7 +40,7 @@ class Location extends BaseObject {
     }
 }
 
-class WorldMap {
+export class WorldMap {
     readonly name: string;
     description: string;
     locations: Map<string, Location>;
@@ -105,29 +105,32 @@ class WorldMap {
     }
 }
 
-class PositioningService {
-    isPositionInLocation(position: [number, number], map: WorldMap, locationId: string): boolean {
+// TODO: Implement portals
+
+export class PositioningService {
+    isPositionInLocation(position: Coordinates, map: WorldMap, locationId: string): boolean {
         let inside = false;
 
         // get location bounding hull points
         let polygon: Coordinates[] = map.getLocation(locationId).boundPositions;
 
-        if (polygon.length === 0) return false;
+        // ensure polygon is defined before accessing its properties
+        if (!polygon || polygon.length === 0) return false;
 
         for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
             const xi = polygon[i].x, yi = polygon[i].y;
             const xj = polygon[j].x, yj = polygon[j].y;
 
             const intersect =
-                (yi > position[1]) !== (yj > position[1]) &&
-                position[0] < ((xj - xi) * (position[1] - yi)) / (yj - yi) + xi;
+                (yi > position.y) !== (yj > position.y) &&
+                position.x < ((xj - xi) * (position.y - yi)) / (yj - yi) + xi;
 
             if (intersect) inside = !inside;
         }
         return inside;
     }
 
-    getLocationBoundingPosition(position: [number, number], map: WorldMap): string|undefined {
+    getLocationBoundingPosition(position: Coordinates, map: WorldMap): string|undefined {
         // Returns the deepest location node that bounds the given position
         const findDeepestPositionLocation = (location: Location): Location | undefined => {
             if (!this.isPositionInLocation(position, map, location.id)) {
@@ -162,14 +165,11 @@ class PositioningService {
     }
 
     canReach(entity: Entity, map: WorldMap, pointOfInterest: PointOfInterest): boolean {
-        // Checks if a POI can be reached by an entity at its current position without major movement to its position
-
-        // reachability check using PointOfInterest.reach_allowance
-        return true;
+        const directDistance = this.calculateDistance(entity.position, pointOfInterest.position);
+        return directDistance <= pointOfInterest.reach_allowance;
     }
 
-    // calculateDistance(source:PointOfInterest, destination: PointOfInterest): number {
-    //     return 0
-    // }
-
+    calculateDistance(source: Coordinates, destination: Coordinates): number {
+        return Math.sqrt(Math.pow(destination.x - source.x, 2) + Math.pow(destination.y - source.y, 2));
+    }
 }
