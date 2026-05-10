@@ -64,7 +64,7 @@ export interface IAttribute {
 
 }
 
-export abstract class BaseObject implements IAttribute {
+export abstract class AttributableObject implements IAttribute {
     readonly id: string = crypto.randomUUID();
     readonly attributes: Map<string, Attribute> = new Map<string, Attribute>();
 

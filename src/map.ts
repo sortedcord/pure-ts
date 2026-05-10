@@ -1,4 +1,4 @@
-import { BaseObject } from "./attribute.js";
+import { AttributableObject } from "./attribute.js";
 import { Entity } from "./entity.js";
 
 export type Coordinates = {
@@ -6,12 +6,12 @@ export type Coordinates = {
     y: number;
 }
 
-class PointOfInterest extends BaseObject {
+class PointOfInterest extends AttributableObject {
     name: string;
     position: Coordinates;
     description: string;
     reach_allowance: number;
-    isBlocking: boolean;
+    isBlocking: boolean; // If true, entities cannot move through this point of interest (e.g., a wall or a locked door)
 
     constructor(name: string, description: string, position: Coordinates, reach_allowance: number=1, isBlocking: boolean = false) {
         super();
@@ -23,7 +23,7 @@ class PointOfInterest extends BaseObject {
     }
 }
 
-class Location extends BaseObject {
+class Location extends AttributableObject {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
@@ -40,12 +40,13 @@ class Location extends BaseObject {
     }
 }
 
-export class WorldMap {
+export class WorldMap extends AttributableObject {
     readonly name: string;
     description: string;
     locations: Map<string, Location>;
 
     constructor(name: string, description: string) {
+        super();
         this.name = name;
         this.description = description;
         this.locations = new Map<string, Location>();
@@ -105,11 +106,22 @@ export class WorldMap {
     }
 }
 
+/*
+Better design would probably be to have a top-down graph structure for locations where each location(or node) references
+its children and its parent.
+
+POIs and entities would attatch to nodes or locations in the graph. This would make it easier to travel through the locations
+but also to figure out where an entity is and where it can go along with what all entities are there in the graph at any arbitrary location.
+*/
+
+
 // TODO: Implement portals
 
 export class PositioningService {
     isPositionInLocation(position: Coordinates, map: WorldMap, locationId: string): boolean {
         let inside = false;
+
+        // Run a ray casting algorithm
 
         // get location bounding hull points
         let polygon: Coordinates[] = map.getLocation(locationId).boundPositions;
@@ -165,7 +177,10 @@ export class PositioningService {
     }
 
     canReach(entity: Entity, map: WorldMap, pointOfInterest: PointOfInterest): boolean {
+        // Also determines interactability with a point of interest
         const directDistance = this.calculateDistance(entity.position, pointOfInterest.position);
+
+        // TODO: Path finding and object collision
         return directDistance <= pointOfInterest.reach_allowance;
     }
 

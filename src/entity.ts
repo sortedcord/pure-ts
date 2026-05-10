@@ -1,4 +1,4 @@
-import { BaseObject } from "./attribute.js";
+import { AttributableObject } from "./attribute.js";
 import type { Coordinates } from "./map.js";
 
 export class EntityStore {
@@ -17,7 +17,7 @@ export class EntityStore {
     }
 }
 
-export class Entity extends BaseObject {
+export class Entity extends AttributableObject {
     name: string;
     position: Coordinates;
     memory: any;
