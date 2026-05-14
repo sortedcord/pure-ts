@@ -12,14 +12,16 @@ class PointOfInterest extends AttributableObject {
     description: string;
     reach_allowance: number;
     isBlocking: boolean; // If true, entities cannot move through this point of interest (e.g., a wall or a locked door)
+    attatchedLocationId: string; // The location this point of interest is attatched to. This is needed to determine where it is in the world and who can interact with it
 
-    constructor(name: string, description: string, position: Coordinates, reach_allowance: number=1, isBlocking: boolean = false) {
+    constructor(name: string, description: string, position: Coordinates, reach_allowance: number=1, isBlocking: boolean = false, attatchedLocationId:string) {
         super();
         this.name = name;
         this.description = description;
         this.position = position;
         this.reach_allowance = reach_allowance;
         this.isBlocking = isBlocking;
+        this.attatchedLocationId = attatchedLocationId;
     }
 }
 
@@ -27,16 +29,42 @@ class Location extends AttributableObject {
     name: string;
     children: Map<string, Location>;
     pointOfInterests: Map<string, PointOfInterest>;
+    // A position on the map cannot have two locations simulataneously unless they are in a parent-child relationship.
+    // TODO: Add a validator for this rule when adding locations to the map.
     boundPositions: Coordinates[]; // order of points matters as it describes the hull
     description: string;
+    parentLocationId?: string;
 
-    constructor(name: string, description: string, boundingPositions: Coordinates[]) {
+    constructor(name: string, description: string, boundingPositions: Coordinates[], parentLocationId?: string) {
         super();
         this.name = name;
         this.description = description;
         this.children = new Map<string, Location>();
         this.pointOfInterests = new Map<string, PointOfInterest>();
         this.boundPositions = boundingPositions;
+        
+        if (!parentLocationId)  this.parentLocationId = "root";
+        else this.parentLocationId = parentLocationId;
+    }
+
+    addChildLocation(location: Location) {
+        location.parentLocationId = this.id;
+        this.children.set(location.id, location);
+    }
+
+    removeChildLocation(locationId: string) {
+        this.children.delete(locationId);
+    }
+
+    attatchPointOfInterest(poi: PointOfInterest) {
+        poi.attatchedLocationId = this.id;
+        this.pointOfInterests.set(poi.id, poi);
+    }
+    
+    // When moving POIs, attatch first; remove later.
+
+    removePointOfInterest(poiId: string) {
+        this.pointOfInterests.delete(poiId);
     }
 }
 

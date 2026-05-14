@@ -15,7 +15,7 @@ export class EntityStore {
     static remove(entityId: string) {
         this.entities.delete(entityId);
     }
-}
+    }
 
 export class Entity extends AttributableObject {
     name: string;
@@ -28,3 +28,5 @@ export class Entity extends AttributableObject {
         this.position = {x: 0, y: 0};
     }
 }
+
+// TODO: Reaction Pipeline
